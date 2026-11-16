@@ -1,7 +1,6 @@
 "use client";
 
-import * as tus from "tus-js-client";
-import { BUCKET_ORIGINALS, BUCKET_PUBLIC, DISPLAY_LONG_EDGE, MAX_UPLOAD_BYTES, SUPABASE_KEY, SUPABASE_URL, THUMB_LONG_EDGE } from "./config";
+import { BUCKET_ORIGINALS, BUCKET_PUBLIC, DISPLAY_LONG_EDGE, MAX_UPLOAD_BYTES, THUMB_LONG_EDGE } from "./config";
 import { getBrowserClient } from "./supabase/client";
 
 export const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif", "image/heic", "image/heif"];
@@ -138,45 +137,59 @@ export async function uploadPublic(path: string, blob: Blob) {
   const { error } = await getBrowserClient()
     .storage.from(BUCKET_PUBLIC)
     .upload(path, blob, { contentType: blob.type, cacheControl: "31536000", upsert: false });
-  if (error) throw new Error(`Upload failed: ${error.message}`);
+  if (error) throw new Error(explainStorageError(error.message, "the web copy"));
   return path;
 }
 
-/**
- * The untouched original, sent in resumable 6 MB chunks so a dropped connection
- * doesn't restart a large upload. Stored in the private originals bucket.
- */
-export async function uploadOriginal(folder: string, file: File, onProgress: (fraction: number) => void): Promise<string> {
-  const supabase = getBrowserClient();
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new Error("Your session has expired. Sign in again to upload.");
+/** Guess a content type from the file name when the browser doesn't supply one. */
+function contentTypeFor(file: File) {
+  if (file.type) return file.type;
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  return ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : ext === "avif" ? "image/avif" : ext === "heic" ? "image/heic" : "image/jpeg";
+}
 
+/** The untouched original photograph, stored in the private originals bucket. */
+export async function uploadOriginal(folder: string, file: File): Promise<string> {
   const path = `${folder}/${Date.now().toString(36)}-${safeFileName(file.name)}`;
-  await new Promise<void>((resolve, reject) => {
-    const upload = new tus.Upload(file, {
-      endpoint: `${SUPABASE_URL}/storage/v1/upload/resumable`,
-      retryDelays: [0, 2000, 5000, 10000, 20000],
-      headers: { authorization: `Bearer ${token}`, apikey: SUPABASE_KEY, "x-upsert": "false" },
-      uploadDataDuringCreation: true,
-      removeFingerprintOnSuccess: true,
-      chunkSize: 6 * 1024 * 1024, // Supabase requires exactly 6 MB chunks
-      metadata: {
-        bucketName: BUCKET_ORIGINALS,
-        objectName: path,
-        contentType: file.type || "image/jpeg",
-        cacheControl: "3600",
-      },
-      onError: (err) => reject(new Error(`The original didn't upload: ${err.message}`)),
-      onProgress: (sent, total) => onProgress(total ? sent / total : 0),
-      onSuccess: () => resolve(),
-    });
-    upload.findPreviousUploads().then((previous) => {
-      if (previous.length) upload.resumeFromPreviousUpload(previous[0]!);
-      upload.start();
-    }, reject);
-  });
+  const { error } = await getBrowserClient()
+    .storage.from(BUCKET_ORIGINALS)
+    .upload(path, file, { contentType: contentTypeFor(file), cacheControl: "3600", upsert: false });
+  if (error) throw new Error(explainStorageError(error.message, "the original photograph"));
   return path;
+}
+
+/** Turn Supabase Storage errors into something actionable. */
+export function explainStorageError(message: string, what: string) {
+  const m = message.toLowerCase();
+  if (m.includes("row-level security") || m.includes("unauthorized") || m.includes("403"))
+    return `Supabase refused to store ${what}: your account isn't set up as an admin. Run supabase/make-admin.sql again with your login email, then sign out and back in.`;
+  if (m.includes("bucket not found"))
+    return `Supabase couldn't find the storage bucket for ${what}. Run the migration file (supabase/migrations/…_gallery.sql) in the SQL Editor again.`;
+  if (m.includes("maximum allowed size") || m.includes("too large") || m.includes("413"))
+    return `${what.charAt(0).toUpperCase() + what.slice(1)} is too large for Supabase. Export the photo as a JPEG under 50 MB and try again.`;
+  if (m.includes("mime type"))
+    return `Supabase doesn't accept this file type for ${what}. Use a JPEG or PNG.`;
+  return `Uploading ${what} failed: ${message}`;
+}
+
+/** Reject if a step takes longer than `ms`, so the page can never spin forever. */
+export function withTimeout<T>(promise: Promise<T>, ms: number, what: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = window.setTimeout(
+      () => reject(new Error(`${what} took too long (over ${Math.round(ms / 1000)} seconds). Check your internet connection and try again.`)),
+      ms,
+    );
+    promise.then(
+      (v) => {
+        window.clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        window.clearTimeout(t);
+        reject(e);
+      },
+    );
+  });
 }
 
 /** A unique, cache-safe stamp for file names. */

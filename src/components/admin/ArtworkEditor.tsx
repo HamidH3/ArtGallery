@@ -9,7 +9,7 @@ import { Frame } from "@/components/site/Frame";
 import { framedAspect } from "@/lib/hang";
 import { resolveFrame } from "@/lib/images";
 import type { Artwork, FrameStyle } from "@/lib/types";
-import { ACCEPTED_TYPES, extensionFor, makeDerivatives, readDimensions, stamp, uploadOriginal, uploadPublic, validateImage } from "@/lib/upload";
+import { ACCEPTED_TYPES, extensionFor, makeDerivatives, readDimensions, stamp, uploadOriginal, uploadPublic, validateImage, withTimeout } from "@/lib/upload";
 import { Button, Field, Notice, Select, TextArea, TextInput, Toggle } from "./ui";
 
 const MEDIA = [
@@ -143,20 +143,32 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
     try {
       let image: ArtworkInput["image"];
       if (picked) {
-        setPhase({ step: "working", message: "Preparing the web copies…" });
-        const d = await makeDerivatives(picked.file);
+        setPhase({ step: "working", message: "Step 1 of 4: preparing the web copies…" });
+        const d = await withTimeout(makeDerivatives(picked.file), 90_000, "Preparing the web copies");
         const s = stamp();
 
-        setPhase({ step: "working", message: "Uploading the original photograph…", progress: 0 });
-        const originalPath = await uploadOriginal(id, picked.file, (p) =>
-          setPhase({ step: "working", message: "Uploading the original photograph…", progress: p }),
+        const mb = (picked.file.size / 1048576).toFixed(1);
+        setPhase({ step: "working", message: `Step 2 of 4: uploading the original photograph (${mb} MB)…` });
+        // Generous limit: 45 s plus time for a slow (~200 KB/s) connection.
+        const originalPath = await withTimeout(
+          uploadOriginal(id, picked.file),
+          45_000 + (picked.file.size / 200_000) * 1000,
+          "Uploading the original photograph",
         );
         uploaded.originals.push(originalPath);
 
-        setPhase({ step: "working", message: "Uploading the gallery copies…" });
-        const displayPath = await uploadPublic(`${id}/${s}-display.${extensionFor(d.display.type)}`, d.display);
+        setPhase({ step: "working", message: "Step 3 of 4: uploading the gallery copies…" });
+        const displayPath = await withTimeout(
+          uploadPublic(`${id}/${s}-display.${extensionFor(d.display.type)}`, d.display),
+          120_000,
+          "Uploading the gallery copy",
+        );
         uploaded.public.push(displayPath);
-        const thumbPath = await uploadPublic(`${id}/${s}-thumb.${extensionFor(d.thumb.type)}`, d.thumb);
+        const thumbPath = await withTimeout(
+          uploadPublic(`${id}/${s}-thumb.${extensionFor(d.thumb.type)}`, d.thumb),
+          60_000,
+          "Uploading the thumbnail",
+        );
         uploaded.public.push(thumbPath);
 
         image = {
@@ -170,8 +182,8 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
         };
       }
 
-      setPhase({ step: "working", message: isNew ? "Hanging the painting…" : "Saving changes…" });
-      const res = await saveArtwork({
+      setPhase({ step: "working", message: isNew ? "Step 4 of 4: hanging the painting…" : "Saving changes…" });
+      const res = await withTimeout(saveArtwork({
         id,
         isNew,
         // A name is optional: unnamed paintings are called "Untitled" (only you see it).
@@ -185,9 +197,10 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
         is_featured: featured,
         is_published: published,
         image,
-      });
+      }), 60_000, "Saving the painting");
       if (!res.ok) throw new Error(res.error);
       setPicked(null);
+      setPhase({ step: "working", message: "Done. Taking you back to the collection…" });
       router.push("/admin");
       router.refresh();
     } catch (err) {
@@ -335,7 +348,9 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
 
         {phase.step === "working" ? (
           <div className="admin-progress" role="status">
-            <p>{phase.message}</p>
+            <p>
+              {phase.message} <Elapsed key={phase.message} />
+            </p>
             {typeof phase.progress === "number" ? (
               <div className="admin-progress-bar">
                 <span style={{ width: `${Math.round(phase.progress * 100)}%` }} />
@@ -387,4 +402,14 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
       </aside>
     </form>
   );
+}
+
+/** Seconds spent on the current step, so a slow upload never looks frozen. */
+function Elapsed() {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    const t = window.setInterval(() => setSeconds((n) => n + 1), 1000);
+    return () => window.clearInterval(t);
+  }, []);
+  return seconds >= 2 ? <span className="text-umber tabular-nums">({seconds}s)</span> : null;
 }

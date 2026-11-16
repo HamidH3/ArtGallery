@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { SUPABASE_KEY, SUPABASE_URL } from "@/lib/config";
 
 /**
  * Keeps the Supabase session cookie fresh for the dashboard and turns signed-out visitors away
@@ -7,8 +8,8 @@ import { NextResponse, type NextRequest } from "next/server";
  * Server Action verifies the user again, and Row Level Security enforces it in the database.
  */
 export async function proxy(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = SUPABASE_URL;
+  const key = SUPABASE_KEY;
   if (!url || !key) return NextResponse.next();
 
   let response = NextResponse.next({ request });
