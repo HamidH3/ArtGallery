@@ -13,7 +13,7 @@ const PAPER_MEDIA = /(pencil|graphite|charcoal|ink|watercolou?r|gouache|pastel|c
 /** Oils and acrylics hang in gilt; works on paper get a walnut frame and ivory mount. */
 export function resolveFrame(art: Pick<Artwork, "frame_style" | "medium">): Exclude<FrameStyle, "auto"> {
   if (art.frame_style && art.frame_style !== "auto") return art.frame_style;
-  return art.medium && PAPER_MEDIA.test(art.medium) ? "paper" : "gilt";
+  return art.medium && PAPER_MEDIA.test(art.medium) ? "paper" : "walnut";
 }
 
 export function aspect(art: Pick<Artwork, "width" | "height">) {

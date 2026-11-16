@@ -64,7 +64,7 @@ export async function saveArtwork(input: ArtworkInput): Promise<ActionResult<{ i
     if (!UUID.test(input.id)) throw new Error("That artwork reference isn't valid.");
 
     const title = text(input.title, 200);
-    if (!title) throw new Error("Give the painting a title.");
+    if (!title) throw new Error("Give the painting a name.");
     const year =
       input.year === null || input.year === undefined
         ? null

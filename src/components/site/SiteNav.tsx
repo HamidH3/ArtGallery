@@ -22,7 +22,8 @@ export function SiteNav({ name }: { name: string }) {
     return () => window.removeEventListener("scroll", update);
   }, [onHome]);
 
-  const tone = onWork || (onHome && !pastHero) ? "dark" : "light";
+  // The whole site is dark now; the bar only gains a backing once the visitor scrolls past the entrance.
+  const tone = "dark";
   const showWordmark = !onHome || pastHero;
   const galleryCurrent = onHome || onWork;
 
@@ -30,6 +31,7 @@ export function SiteNav({ name }: { name: string }) {
     <header
       data-tone={tone}
       data-solid={(onHome && pastHero) || (!onHome && !onWork) || undefined}
+      data-dark-solid=""
       className="site-nav fixed inset-x-0 top-0 z-50"
     >
       <a href="#main" className="skip-link">

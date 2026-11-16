@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { type ArtworkInput, deleteArtwork, discardUploads, saveArtwork } from "@/app/admin/actions";
 import { Frame } from "@/components/site/Frame";
-import { WallLabel } from "@/components/site/WallLabel";
 import { framedAspect } from "@/lib/hang";
 import { resolveFrame } from "@/lib/images";
 import type { Artwork, FrameStyle } from "@/lib/types";
@@ -31,11 +30,10 @@ const MEDIA = [
 ];
 
 const FRAME_OPTIONS: { value: FrameStyle; label: string; note: string }[] = [
-  { value: "auto", label: "Automatic", note: "Gilt for paintings, a mount for works on paper" },
-  { value: "gilt", label: "Gilt", note: "Antique gold moulding" },
-  { value: "walnut", label: "Walnut", note: "Dark wood with a gold slip" },
-  { value: "paper", label: "Ivory mount", note: "For drawings and watercolours" },
-  { value: "none", label: "Unframed", note: "Bare canvas edge" },
+  { value: "walnut", label: "Dark walnut", note: "Deep wood with a thin gold edge" },
+  { value: "gilt", label: "Aged gilt", note: "Dark, tarnished gold moulding" },
+  { value: "paper", label: "Black with mount", note: "Black frame, ivory mount: suits drawings" },
+  { value: "none", label: "No frame", note: "Just the canvas" },
 ];
 
 interface Picked {
@@ -60,7 +58,9 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
   const [dimensions, setDimensions] = useState(artwork?.dimensions ?? "");
   const [description, setDescription] = useState(artwork?.description ?? "");
   const [altText, setAltText] = useState(artwork?.alt_text ?? "");
-  const [frame, setFrame] = useState<FrameStyle>(artwork?.frame_style ?? "auto");
+  const [frame, setFrame] = useState<FrameStyle>(
+    artwork ? (artwork.frame_style === "auto" ? resolveFrame(artwork) : artwork.frame_style) : "walnut",
+  );
   const [featured, setFeatured] = useState(artwork?.is_featured ?? false);
   const [published, setPublished] = useState(artwork?.is_published ?? true);
   const [picked, setPicked] = useState<Picked | null>(null);
@@ -131,10 +131,6 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim()) {
-      setTitleError("Give the painting a title.");
-      return;
-    }
     setTitleError(null);
     if (isNew && !picked) {
       setFileError("Add a photograph of the painting.");
@@ -178,7 +174,8 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
       const res = await saveArtwork({
         id,
         isNew,
-        title,
+        // A name is optional: unnamed paintings are called "Untitled" (only you see it).
+        title: title.trim() || "Untitled",
         description,
         year: year ? Number(year) : null,
         medium,
@@ -210,7 +207,6 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
 
   const years = Array.from({ length: thisYear - 1949 }, (_, i) => thisYear - i);
   if (year && !years.includes(Number(year))) years.push(Number(year));
-  const onWall = featured ? "principal" : "cabinet";
   const fa = framedAspect(previewArt);
 
   return (
@@ -271,66 +267,13 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
           ) : null}
         </div>
 
-        <Field label="Title" htmlFor="title" error={titleError}>
-          <TextInput id="title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} required />
-        </Field>
-
-        <div className="grid gap-8 sm:grid-cols-2">
-          <Field label="Year" htmlFor="year">
-            <Select id="year" value={year} onChange={(e) => setYear(e.target.value)}>
-              <option value="">Not dated</option>
-              {years.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Dimensions" htmlFor="dimensions" optional hint="Height × width, for example 60 × 80 cm">
-            <TextInput
-              id="dimensions"
-              value={dimensions}
-              onChange={(e) => setDimensions(e.target.value)}
-              onBlur={() => setDimensions((d) => d.replace(/\s*[xX]\s*/g, " × "))}
-              maxLength={120}
-            />
-          </Field>
-        </div>
-
-        <Field label="Medium" htmlFor="medium" hint="Choose a suggestion or type your own.">
-          <TextInput id="medium" list="media" value={medium} onChange={(e) => setMedium(e.target.value)} maxLength={200} />
-          <datalist id="media">
-            {MEDIA.map((m) => (
-              <option key={m} value={m} />
-            ))}
-          </datalist>
-        </Field>
-
-        <Field
-          label="Notes on the painting"
-          htmlFor="description"
-          optional
-          hint="Shown in the viewing room. The first paragraph also appears on the wall label of principal works."
-        >
-          <TextArea id="description" rows={6} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={5000} />
-        </Field>
-
-        <Field
-          label="Description for screen readers"
-          htmlFor="alt"
-          optional
-          hint="One sentence describing what the painting shows, for visitors who can't see it."
-        >
-          <TextInput id="alt" value={altText} onChange={(e) => setAltText(e.target.value)} maxLength={500} />
-        </Field>
-
         <fieldset>
-          <legend className="admin-label">Frame</legend>
+          <legend className="admin-label">Choose a frame</legend>
           <div className="grid gap-3 sm:grid-cols-2">
             {FRAME_OPTIONS.map((f) => (
               <label key={f.value} className="admin-choice" data-checked={frame === f.value || undefined}>
                 <input type="radio" name="frame" value={f.value} checked={frame === f.value} onChange={() => setFrame(f.value)} className="sr-only" />
-                <span className={`admin-swatch admin-swatch-${f.value === "auto" ? resolveFrame({ frame_style: "auto", medium }) : f.value}`} aria-hidden />
+                <span className={`admin-swatch admin-swatch-${f.value}`} aria-hidden />
                 <span>
                   <span className="block text-[1.02rem] text-ink">{f.label}</span>
                   <span className="block text-[0.88rem] leading-snug text-umber">{f.note}</span>
@@ -340,15 +283,55 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
           </div>
         </fieldset>
 
+        <Field label="Name" htmlFor="title" error={titleError} optional hint="Only you see this. It labels the painting in your dashboard and in its web address.">
+          <TextInput id="title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} required />
+        </Field>
+
         <div className="space-y-5 border-t border-gold/25 pt-7">
-          <Toggle
-            checked={featured}
-            onChange={setFeatured}
-            label="Principal work"
-            description="Hang it on a wall of its own in the first room, with its label and notes beside it."
-          />
+          <Toggle checked={featured} onChange={setFeatured} label="Hang it larger" description="Give this painting more wall space than the others." />
           <Toggle checked={published} onChange={setPublished} label="On view" description="Turn off to hide the painting from visitors without deleting it." />
         </div>
+
+        <details className="admin-more">
+          <summary>More details for your records (optional, never shown on the site)</summary>
+          <div className="mt-6 space-y-7">
+            <div className="grid gap-8 sm:grid-cols-2">
+              <Field label="Year" htmlFor="year">
+                <Select id="year" value={year} onChange={(e) => setYear(e.target.value)}>
+                  <option value="">Not dated</option>
+                  {years.map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Dimensions" htmlFor="dimensions" hint="For example 60 × 80 cm">
+                <TextInput
+                  id="dimensions"
+                  value={dimensions}
+                  onChange={(e) => setDimensions(e.target.value)}
+                  onBlur={() => setDimensions((d) => d.replace(/\s*[xX]\s*/g, " × "))}
+                  maxLength={120}
+                />
+              </Field>
+            </div>
+            <Field label="Medium" htmlFor="medium">
+              <TextInput id="medium" list="media" value={medium} onChange={(e) => setMedium(e.target.value)} maxLength={200} />
+              <datalist id="media">
+                {MEDIA.map((m) => (
+                  <option key={m} value={m} />
+                ))}
+              </datalist>
+            </Field>
+            <Field label="Notes" htmlFor="description">
+              <TextArea id="description" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={5000} />
+            </Field>
+            <Field label="Description for screen readers" htmlFor="alt" hint="One sentence on what the painting shows, read aloud to visitors who can't see it.">
+              <TextInput id="alt" value={altText} onChange={(e) => setAltText(e.target.value)} maxLength={500} />
+            </Field>
+          </div>
+        </details>
 
         {phase.step === "working" ? (
           <div className="admin-progress" role="status">
@@ -395,22 +378,11 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
       {/* Live preview */}
       <aside className="lg:sticky lg:top-36 lg:self-start" aria-label="Preview">
         <p className="admin-label">How it will hang</p>
-        <div className={`admin-preview ${onWall === "principal" ? "surface-wall on-dark" : "surface-parchment"}`}>
-          <p className={`mb-6 text-center font-display text-[1rem] italic ${onWall === "principal" ? "text-gold-pale/80" : "text-umber"}`}>
-            {onWall === "principal" ? "Room I, principal works" : "The cabinet"}
-          </p>
-          <div className="mx-auto" style={{ width: `min(78%, calc(46svh * ${fa.toFixed(4)}))` }}>
+        <div className="admin-preview admin-preview-dark">
+          <div className="mx-auto" style={{ width: `min(${featured ? 86 : 72}%, calc(${featured ? 52 : 44}svh * ${fa.toFixed(4)}))` }}>
             <Frame art={previewArt} sizes="40vw" srcOverride={picked?.url} />
-            {onWall === "cabinet" ? (
-              <WallLabel art={previewArt} titleAs="p" className="mt-5 text-ink" />
-            ) : null}
           </div>
-          {onWall === "principal" ? (
-            <div className="mx-auto mt-8 flex justify-center">
-              <WallLabel art={previewArt} variant="plaque" withNote titleAs="p" className="w-full max-w-[19rem]" />
-            </div>
-          ) : null}
-          {!published ? <p className="mt-6 text-center text-[0.92rem] italic opacity-80">Hidden from visitors</p> : null}
+          {!published ? <p className="mt-6 text-center text-[0.92rem] italic text-wall-muted">Hidden from visitors</p> : null}
         </div>
       </aside>
     </form>

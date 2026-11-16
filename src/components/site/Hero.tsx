@@ -5,7 +5,6 @@ import { StainedGlass } from "./StainedGlass";
 interface HeroProps {
   name: string;
   kicker: string;
-  statement: string;
 }
 
 /**
@@ -13,7 +12,7 @@ interface HeroProps {
  * an old ceiling; through the doorway, a leaded window with light behind it.
  * The lights coming up on arrival is the page's one orchestrated motion.
  */
-export function Hero({ name, kicker, statement }: HeroProps) {
+export function Hero({ name, kicker }: HeroProps) {
   const trimmed = name.trim();
   const isMonogram = !/\s/.test(trimmed) && trimmed.length <= 4;
   const [first, ...rest] = trimmed.split(/\s+/);
@@ -64,14 +63,7 @@ export function Hero({ name, kicker, statement }: HeroProps) {
           </h1>
         )}
 
-        <Lozenge className="anim-rise mt-6 text-gold-light/80" />
-
-        <p
-          className="hero-statement anim-rise mt-7 max-w-[17rem] text-[1.08rem] leading-[1.6] text-ivory/90 min-[400px]:max-w-[18.5rem] sm:max-w-[24rem] sm:text-[1.15rem]"
-          style={{ animationDelay: "1100ms" }}
-        >
-          {statement}
-        </p>
+        <Lozenge className="anim-rise mt-7 text-gold-light/80" />
       </div>
 
       <a

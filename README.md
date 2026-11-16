@@ -11,22 +11,16 @@ Everything is managed from a private dashboard at `/admin`: upload paintings, wr
 ## What's included
 
 **Public site**
-- **Entrance hall:** the **HH** monogram inside a gilt doorway filled with a dim, glowing stained-glass window. Above the doorway, faded like an old ceiling, the meeting hands from Michelangelo's *Creation of Adam*. One slow "lights up" animation on arrival.
-- **Wall text:** an introduction to the collection with a running count of works and years, written the way a curator would.
-- **Room I, principal works:** a painted vault (a bay of the Sistine Chapel ceiling) above the cornice, and coloured window light falling across the top of the olive silk wall. Below it, each featured painting hangs on its own wall with a printed label and note beside it.
-- **Room II, the cabinet:** the rest of the collection hung in groups of two or three, varied in size and centred on one eye line. On phones it becomes a single column with alternating offsets.
-- **Frames:** four CSS-built styles (antique gilt, walnut with gold slip, ivory mount for works on paper, unframed canvas), chosen per painting. *Automatic* picks gilt for paintings and a mount for drawings and watercolours.
-- **Viewing room:** a large view of the painting, never cropped or distorted, with title, date, medium, size and notes. Arrow keys move between works, *Look closer* opens the full-resolution image for panning, and Escape or the browser's Back button returns the visitor to the same spot on the wall. Each painting also has a shareable address (`/works/<title>`) that opens as its own page.
-- **About page:** an arched portrait and a story told in numbered chapters, with optional studio photographs, pull quotations and lists (influences, exhibitions).
-- SEO metadata, Open Graph images per painting, sitemap, robots rules, keyboard focus styles, skip link and reduced-motion support.
+- **Entrance:** the **HH** monogram in a stained-glass doorway, under a faded detail of Michelangelo's *Creation of Adam*.
+- **Gallery:** one continuous scroll of paintings, each centred on a dark wall in its own frame, with no writing. Paintings marked *hang larger* get more space. Behind everything sits a dark, faded photograph of an old terracotta arch.
+- **Larger view:** click a painting to see it big, with nothing else on screen. Click it again to look closer and drag to move around; arrow keys move between paintings; Escape or Back returns to the same spot.
+- **About:** a short background, in your own words, and nothing else. The text lives in `src/content/about.ts`.
 
 **Dashboard (`/admin`)**
 - Email and password sign-in, with password reset by email.
-- **Add a painting:** drag a photograph in, fill in title, year, medium, dimensions, notes and screen-reader description, choose a frame, then mark it as a principal work or hide it. A live preview shows exactly how it will hang.
-- **Collection:** drag to reorder (mouse, touch or keyboard), or use the arrow buttons. Toggle *Principal* and *On view* inline.
-- Edit or replace any painting's image, and delete it along with all its stored files.
-- **About page editor:** portrait, introduction, chapters, quotations and photographs, all reorderable.
-- **Site details:** your name or monogram (shown as the wordmark everywhere), entrance text, wall text, room names, closing text, optional contact email and links (left empty, nothing is shown), and search description.
+- **Add a painting:** drop in a photo, choose a frame (dark walnut, aged gilt, black with ivory mount, or no frame), optionally name it, and click *Hang the painting*. A live preview shows exactly how it will look.
+- **Collection:** drag paintings into the order visitors scroll past them; toggle *Larger* and *On view*; edit, replace or delete any painting.
+- **Site details:** the name at the entrance (HH), the line above it, optional footer links and the search description.
 
 **Images**
 - The original photograph is uploaded **untouched** to a private bucket, in resumable 6 MB chunks so large files survive a dropped connection.
@@ -95,8 +89,9 @@ Changes saved in the dashboard appear on the live site immediately: each save cl
 | To change… | Where |
 | --- | --- |
 | Your name or monogram (currently **HH**), entrance text, wall text, room names, optional contact links | Dashboard → **Site details**. A name of up to four letters with no spaces is set as a large monogram; a full name is set on two lines. |
-| The Michelangelo backgrounds | `public/fresco/` (replace the files, keeping the names), placed in `Hero.tsx` and `GalleryRooms.tsx` |
-| The stained glass and window light | `src/components/site/StainedGlass.tsx` and `WindowLight.tsx` (colours are at the top of each file) |
+| About page text | `src/content/about.ts` |
+| Background images | `public/fresco/creation-hands.jpg` (entrance) and `public/backdrop/terracotta-arch.jpg` (behind everything) |
+| Stained glass colours | `src/components/site/StainedGlass.tsx` |
 | About page text, portrait and photographs | Dashboard → **About page** |
 | Colours | `src/app/globals.css`, the `@theme` block at the top (parchment, walnut, olive wall, gold, burgundy) |
 | Typefaces | `src/app/fonts.ts` (Cormorant Garamond for display, EB Garamond for reading, self-hosted in `src/fonts`) |
@@ -106,11 +101,10 @@ Changes saved in the dashboard appear on the live site immediately: each save cl
 
 ## Background images
 
-The two fresco details in `public/fresco/` are from Michelangelo's Sistine Chapel ceiling (1508–1512), taken from Wikimedia Commons, where both are marked as faithful reproductions of public-domain works:
-- `creation-hands.jpg`: a detail of *The Creation of Adam*, used above the entrance;
-- `sistine-vault.jpg`: the first bay of the ceiling (*Separation of Light from Darkness*, with Jeremiah and the Persian Sibyl), used as Room I's painted vault.
+- `public/fresco/creation-hands.jpg`: a detail of Michelangelo's *The Creation of Adam* (Sistine Chapel, c. 1511), public domain, via Wikimedia Commons.
+- `public/backdrop/terracotta-arch.jpg`: the main entrance of the Natural History Museum, London, photographed by sagesolar, licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), via Wikimedia Commons. Converted to sepia and darkened. The licence requires the credit, which is in the footer.
 
-They are shown dimmed and warm-toned so they never compete with your paintings, and they are credited in the footer. The stained glass and coloured light are drawn in code (SVG), not photographs.
+The stained glass is drawn in code (SVG), not a photograph.
 
 ## Project structure
 

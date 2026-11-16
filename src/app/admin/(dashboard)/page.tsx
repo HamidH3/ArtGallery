@@ -9,7 +9,7 @@ export default async function CollectionPage() {
     <>
       <PageHeading
         title="The collection"
-        lede="Drag paintings to change the order visitors walk past them. Principal works hang on their own walls in the first room; the rest hang together in the cabinet."
+        lede="Visitors scroll past your paintings in this order, top to bottom. Drag a painting (or use the arrows) to move it."
         actions={
           <Link href="/admin/works/new" className="admin-button admin-button-primary">
             Add a painting

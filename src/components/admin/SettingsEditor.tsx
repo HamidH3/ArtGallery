@@ -10,36 +10,22 @@ type Key = keyof SiteSettings;
 
 const GROUPS: { title: string; note?: string; fields: { key: Key; label: string; hint?: string; rows?: number; optional?: boolean; type?: string }[] }[] = [
   {
-    title: "Name and entrance",
+    title: "Name",
     fields: [
-      { key: "artist_name", label: "Artist name", hint: "Used for the wordmark, the entrance and page titles." },
-      { key: "hero_kicker", label: "Line above your name" },
-      { key: "hero_statement", label: "Opening statement", rows: 3 },
+      { key: "artist_name", label: "Name shown on the site", hint: "Up to four letters with no spaces (like HH) is shown as a large monogram." },
+      { key: "hero_kicker", label: "Line above the name", hint: "The small line at the entrance." },
     ],
   },
   {
-    title: "Introduction to the collection",
+    title: "Links in the footer",
     fields: [
-      { key: "intro_heading", label: "Heading" },
-      { key: "intro_body", label: "Wall text", rows: 6, hint: "Leave a blank line between paragraphs." },
-      { key: "room_one_title", label: "Name of the first room", hint: "Where principal works hang." },
-      { key: "room_two_title", label: "Name of the second room", hint: "Where the rest of the collection hangs." },
-    ],
-  },
-  {
-    title: "Closing and contact",
-    fields: [
-      { key: "closing_heading", label: "Closing heading" },
-      { key: "closing_body", label: "Closing text", rows: 3 },
-      { key: "contact_email", label: "Contact email", optional: true, type: "email" },
+      { key: "contact_email", label: "Email", optional: true, type: "email", hint: "Leave empty to show no email." },
       { key: "instagram_url", label: "Instagram link", optional: true, hint: "The full address, starting https://" },
-      { key: "extra_link_label", label: "Another link: label", optional: true, hint: "For example Shop or Newsletter." },
-      { key: "extra_link_url", label: "Another link: address", optional: true },
     ],
   },
   {
     title: "Search engines",
-    fields: [{ key: "meta_description", label: "Description", rows: 2, hint: "One sentence shown under your name in search results." }],
+    fields: [{ key: "meta_description", label: "Description", rows: 2, hint: "One sentence shown under the site's name in search results." }],
   },
 ];
 
@@ -58,7 +44,7 @@ export function SettingsEditor({ settings }: { settings: SiteSettings }) {
     const res = await saveSettings(values as Partial<SiteSettings>);
     setBusy(false);
     if (!res.ok) return setMessage({ tone: "error", text: res.error });
-    setMessage({ tone: "success", text: "Saved. The gallery shows the new text now." });
+    setMessage({ tone: "success", text: "Saved. The site shows the change now." });
     router.refresh();
   }
 

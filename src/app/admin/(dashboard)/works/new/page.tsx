@@ -7,7 +7,7 @@ export default async function NewWorkPage() {
     <>
       <PageHeading
         title="Add a painting"
-        lede="Upload a photograph, add the label details and choose a frame. The preview shows how it will look on the wall."
+        lede="Drop in a photo of the painting, choose a frame, give it a name and click Hang the painting. The preview shows how it will look on the wall."
       />
       <ArtworkEditor artwork={null} currentYear={await getCopyrightYear()} />
     </>

@@ -94,14 +94,14 @@ export function CollectionManager({ initial }: { initial: Artwork[] }) {
     );
   }
 
-  const principal = works.filter((w) => w.is_featured && w.is_published).length;
+  const larger = works.filter((w) => w.is_featured && w.is_published).length;
   const hidden = works.filter((w) => !w.is_published).length;
 
   return (
     <div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 text-[0.98rem] text-umber">
         <p>
-          {works.length} {works.length === 1 ? "painting" : "paintings"}, {principal} principal
+          {works.length} {works.length === 1 ? "painting" : "paintings"}{larger ? `, ${larger} hung larger` : ""}
           {hidden ? `, ${hidden} hidden from visitors` : ""}
         </p>
         <p aria-live="polite" className="italic">
@@ -188,7 +188,7 @@ function Row({
       <div className="admin-row-flags">
         <label className="admin-chip">
           <input type="checkbox" checked={art.is_featured} onChange={(e) => onToggle("is_featured", e.target.checked)} />
-          Principal
+          Larger
         </label>
         <label className="admin-chip">
           <input type="checkbox" checked={art.is_published} onChange={(e) => onToggle("is_published", e.target.checked)} />

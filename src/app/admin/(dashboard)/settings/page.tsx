@@ -6,7 +6,7 @@ export default async function SettingsPage() {
   const settings = await getSettingsForEdit();
   return (
     <>
-      <PageHeading title="Site details" lede="The words around the paintings: your name, the entrance, the wall text and how visitors can reach you." />
+      <PageHeading title="Site details" lede="Your name at the entrance and any links you want in the footer. The About page text lives in the code; ask Claude to change it." />
       <SettingsEditor settings={settings} />
     </>
   );

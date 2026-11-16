@@ -18,18 +18,15 @@ export async function generateMetadata({ params }: PageProps<"/works/[slug]">): 
   const { slug } = await params;
   const art = await getArtworkBySlug(slug);
   if (!art || art.placeholder) return { title: "Not found" };
-  const description =
-    art.description?.split(/\n\s*\n/)[0]?.slice(0, 200) ?? [art.medium, art.year].filter(Boolean).join(", ");
   const image = publicImageUrl(art.thumbnail_path || art.image_path);
   return {
     title: art.title,
-    description,
     alternates: { canonical: `/works/${art.slug}` },
-    openGraph: { title: art.title, description, images: image ? [{ url: image, alt: art.alt_text ?? art.title }] : [] },
+    openGraph: { title: art.title, images: image ? [{ url: image, alt: art.alt_text ?? art.title }] : [] },
   };
 }
 
-/** A painting's own page: what a shared link or a search result opens. Inside the gallery, the viewing room is used instead. */
+/** A painting's own page, for shared links: just the painting, with a way back. */
 export default async function WorkPage({ params }: PageProps<"/works/[slug]">) {
   const { slug } = await params;
   const works = (await getArtworks()).filter((w) => !w.placeholder);
@@ -41,57 +38,16 @@ export default async function WorkPage({ params }: PageProps<"/works/[slug]">) {
   const fa = framedAspect(art);
 
   return (
-    <article className="work-page on-dark relative grid min-h-svh lg:grid-cols-[minmax(0,1fr)_25rem]">
-      <div className="viewing-stage relative flex min-h-[70svh] items-center justify-center px-5 pt-[calc(var(--nav-h)+2rem)] pb-10 sm:px-10 lg:px-16 lg:pb-14">
-        <div aria-hidden className="viewing-light" />
-        <div className="relative w-full" style={{ maxWidth: `min(100%, calc((100svh - var(--nav-h) - 6rem) * ${fa.toFixed(4)}))` }}>
-          <Frame art={art} sizes="(min-width: 1024px) 68vw, 94vw" preload />
-        </div>
+    <article className="relative flex min-h-svh flex-col items-center justify-center px-5 pt-[calc(var(--nav-h)+2rem)] pb-16 sm:px-10">
+      <h1 className="sr-only">{art.title}</h1>
+      <div className="picture-light w-full" style={{ maxWidth: `min(92vw, 1320px, calc((100svh - var(--nav-h) - 10rem) * ${fa.toFixed(4)}))` }}>
+        <Frame art={art} sizes="(min-width: 768px) 80vw, 94vw" preload />
       </div>
-
-      <div className="viewing-aside flex flex-col px-6 pt-8 pb-14 sm:px-10 lg:pt-[calc(var(--nav-h)+4rem)]">
-        <Link href="/#collection" className="viewing-control self-start">
-          Return to the gallery
-        </Link>
-        <h1 className="mt-10 font-display text-[2.6rem] leading-[1.05] font-medium text-ivory italic sm:text-[2.9rem]">{art.title}</h1>
-        <dl className="mt-6 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-[1rem] text-wall-text/85">
-          {art.year ? (
-            <>
-              <dt className="italic text-wall-muted">Date</dt>
-              <dd className="tabular-nums">{art.year}</dd>
-            </>
-          ) : null}
-          {art.medium ? (
-            <>
-              <dt className="italic text-wall-muted">Medium</dt>
-              <dd>{art.medium}</dd>
-            </>
-          ) : null}
-          {art.dimensions ? (
-            <>
-              <dt className="italic text-wall-muted">Size</dt>
-              <dd className="tabular-nums">{art.dimensions}</dd>
-            </>
-          ) : null}
-        </dl>
-        {art.description ? (
-          <div className="mt-8 space-y-4 border-t border-gold/25 pt-7 text-[1.05rem] leading-[1.7] text-wall-text/90">
-            {art.description.split(/\n\s*\n/).map((p, i) => (
-              <p key={i}>{p}</p>
-            ))}
-          </div>
-        ) : null}
-        {prev && next ? (
-          <nav aria-label="More works" className="mt-auto flex items-center justify-between gap-6 border-t border-gold/25 pt-5">
-            <Link href={`/works/${prev.slug}`} className="viewing-control">
-              Previous
-            </Link>
-            <Link href={`/works/${next.slug}`} className="viewing-control">
-              Next
-            </Link>
-          </nav>
-        ) : null}
-      </div>
+      <nav aria-label="More paintings" className="mt-12 flex items-center gap-10 font-display text-[1.15rem] italic text-gold-pale">
+        {prev ? <Link href={`/works/${prev.slug}`} className="hover:text-ivory">Previous</Link> : null}
+        <Link href="/#collection" className="hover:text-ivory">Back to the gallery</Link>
+        {next ? <Link href={`/works/${next.slug}`} className="hover:text-ivory">Next</Link> : null}
+      </nav>
     </article>
   );
 }
