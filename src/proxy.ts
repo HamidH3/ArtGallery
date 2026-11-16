@@ -27,8 +27,19 @@ export async function proxy(request: NextRequest) {
   });
 
   // Validates the JWT (and refreshes it if needed). Do not run code between client creation and this call.
-  const { data } = await supabase.auth.getClaims();
-  const signedIn = Boolean(data?.claims?.sub);
+  // If Supabase is slow or unreachable, let the request through rather than failing the page:
+  // the dashboard layout checks the session again on the server, and RLS protects the data.
+  let signedIn: boolean;
+  try {
+    const result = await Promise.race([
+      supabase.auth.getClaims(),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000)),
+    ]);
+    if (result === null) return response;
+    signedIn = Boolean(result.data?.claims?.sub);
+  } catch {
+    return response;
+  }
 
   const { pathname } = request.nextUrl;
   const isPublicAdminPage = pathname === "/admin/login";

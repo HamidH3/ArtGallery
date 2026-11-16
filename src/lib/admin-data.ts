@@ -6,6 +6,7 @@ import type { AboutSection, Artwork, SiteSettings } from "./types";
 
 export type AdminState =
   | { status: "unconfigured" }
+  | { status: "unavailable" }
   | { status: "signed-out" }
   | { status: "not-admin"; email: string | null }
   | { status: "admin"; email: string | null; userId: string };
@@ -13,13 +14,26 @@ export type AdminState =
 /** Who is looking at the dashboard. Reads the session cookie, so call it inside a Suspense boundary. */
 export async function getAdminState(): Promise<AdminState> {
   if (!isSupabaseConfigured) return { status: "unconfigured" };
-  const supabase = await createSessionClient();
-  const { data } = await supabase.auth.getClaims();
-  const claims = data?.claims;
-  if (!claims?.sub) return { status: "signed-out" };
-  const email = typeof claims.email === "string" ? claims.email : null;
-  const { data: isAdmin } = await supabase.rpc("is_admin");
-  return isAdmin ? { status: "admin", email, userId: claims.sub } : { status: "not-admin", email };
+  // Never leave the dashboard waiting on a slow connection to Supabase.
+  return Promise.race([
+    checkAdmin(),
+    new Promise<AdminState>((resolve) => setTimeout(() => resolve({ status: "unavailable" }), 8000)),
+  ]);
+}
+
+async function checkAdmin(): Promise<AdminState> {
+  try {
+    const supabase = await createSessionClient();
+    const { data } = await supabase.auth.getClaims();
+    const claims = data?.claims;
+    if (!claims?.sub) return { status: "signed-out" };
+    const email = typeof claims.email === "string" ? claims.email : null;
+    const { data: isAdmin, error } = await supabase.rpc("is_admin");
+    if (error) return { status: "unavailable" };
+    return isAdmin ? { status: "admin", email, userId: claims.sub } : { status: "not-admin", email };
+  } catch {
+    return { status: "unavailable" };
+  }
 }
 
 /** Every artwork, including unpublished ones (RLS allows this for admins only). */

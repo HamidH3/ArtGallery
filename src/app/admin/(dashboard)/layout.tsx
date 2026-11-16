@@ -28,6 +28,13 @@ async function RequireAdmin({ children }: { children: React.ReactNode }) {
       </Message>
     );
   }
+  if (state.status === "unavailable") {
+    return (
+      <Message title="Couldn't reach the gallery's database">
+        This is usually a brief connection problem. Wait a few seconds and refresh the page.
+      </Message>
+    );
+  }
   if (state.status === "signed-out") redirect("/admin/login");
   if (state.status === "not-admin") {
     return (
