@@ -4,7 +4,7 @@
 -- 2. Replace the email below with that address, then run this in the SQL Editor.
 
 insert into public.admins (user_id)
-select id from auth.users where email = 'you@example.com'
+select id from auth.users where email = 'hamidbro333@gmail.com'
 on conflict (user_id) do nothing;
 
 -- Check it worked (should return one row):
