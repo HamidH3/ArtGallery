@@ -12,7 +12,7 @@ Everything is managed from a private dashboard at `/admin`: upload paintings, wr
 
 **Public site**
 - **Entrance:** the **HH** monogram in a stained-glass doorway, under a faded detail of Michelangelo's *Creation of Adam*.
-- **Gallery:** one continuous scroll of paintings, each centred on a dark wall in its own frame, with no writing. Paintings marked *hang larger* get more space. Behind everything sits a dark, faded photograph of an old terracotta arch.
+- **Gallery:** one continuous scroll of paintings, each centred on a dark wall in its own frame, with no writing. Paintings marked *hang larger* get more space. Behind everything sits a dark, faded 1851 photograph of a carved church doorway.
 - **Larger view:** click a painting to see it big, with nothing else on screen. Click it again to look closer and drag to move around; arrow keys move between paintings; Escape or Back returns to the same spot.
 - **About:** a short background, in your own words, and nothing else. The text lives in `src/content/about.ts`.
 
@@ -90,7 +90,7 @@ Changes saved in the dashboard appear on the live site immediately: each save cl
 | --- | --- |
 | Your name or monogram (currently **HH**), entrance text, wall text, room names, optional contact links | Dashboard → **Site details**. A name of up to four letters with no spaces is set as a large monogram; a full name is set on two lines. |
 | About page text | `src/content/about.ts` |
-| Background images | `public/fresco/creation-hands.jpg` (entrance) and `public/backdrop/terracotta-arch.jpg` (behind everything) |
+| Background images | `public/fresco/creation-hands.jpg` (entrance) and `public/backdrop/old-doorway.jpg` (behind everything) |
 | Stained glass colours | `src/components/site/StainedGlass.tsx` |
 | About page text, portrait and photographs | Dashboard → **About page** |
 | Colours | `src/app/globals.css`, the `@theme` block at the top (parchment, walnut, olive wall, gold, burgundy) |
@@ -102,7 +102,9 @@ Changes saved in the dashboard appear on the live site immediately: each save cl
 ## Background images
 
 - `public/fresco/creation-hands.jpg`: a detail of Michelangelo's *The Creation of Adam* (Sistine Chapel, c. 1511), public domain, via Wikimedia Commons.
-- `public/backdrop/terracotta-arch.jpg`: the main entrance of the Natural History Museum, London, photographed by sagesolar, licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), via Wikimedia Commons. Converted to sepia and darkened. The licence requires the credit, which is in the footer.
+- `public/backdrop/old-doorway.jpg`: *Central Portal of the Church of Saint-Jacques, Aubeterre* (1851) by Gustave Le Gray, from the Metropolitan Museum of Art, released as CC0 (no credit required), via Wikimedia Commons. Toned and darkened.
+
+Both images are free to use without credit, so the site doesn't show any.
 
 The stained glass is drawn in code (SVG), not a photograph.
 

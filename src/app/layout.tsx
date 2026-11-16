@@ -16,8 +16,13 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#2a1d14",
-  colorScheme: "light",
+  width: "device-width",
+  initialScale: 1,
+  // The page can't be pinched smaller than the screen (zooming in on a painting still works).
+  minimumScale: 1,
+  viewportFit: "cover",
+  themeColor: "#120c08",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
