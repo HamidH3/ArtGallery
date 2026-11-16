@@ -942,6 +942,7 @@
 @layer components {
   .admin-root {
     font-size: 1.05rem;
+    color: var(--color-ink);
   }
   .admin-tab {
     display: inline-block;

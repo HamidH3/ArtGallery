@@ -43,7 +43,11 @@ interface Picked {
   height: number;
 }
 
-type Phase = { step: "idle" } | { step: "working"; message: string; progress?: number } | { step: "error"; message: string };
+type Phase =
+  | { step: "idle" }
+  | { step: "working"; message: string; progress?: number }
+  | { step: "error"; message: string }
+  | { step: "saved"; message: string; slug?: string };
 
 export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | null; currentYear: number }) {
   const router = useRouter();
@@ -90,6 +94,7 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
     const problem = validateImage(file);
     if (problem) return setFileError(problem);
     setFileError(null);
+    setPhase((p) => (p.step === "saved" || p.step === "error" ? { step: "idle" } : p));
     try {
       const { width, height } = await readDimensions(file);
       setPicked({ file, url: URL.createObjectURL(file), width, height });
@@ -199,10 +204,27 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
         image,
       }), 60_000, "Saving the painting");
       if (!res.ok) throw new Error(res.error);
-      setPicked(null);
-      setPhase({ step: "working", message: "Done. Taking you back to the collection…" });
-      router.push("/admin");
-      router.refresh();
+
+      if (isNew) {
+        // Ready for the next painting straight away: clear the form, keep the chosen frame.
+        const name = title.trim() || "Untitled";
+        if (picked) URL.revokeObjectURL(picked.url);
+        setPicked(null);
+        setTitle("");
+        setYear(String(thisYear));
+        setMedium("");
+        setDimensions("");
+        setDescription("");
+        setAltText("");
+        setFeatured(false);
+        setPublished(true);
+        idRef.current = null;
+        setPhase({ step: "saved", message: `“${name}” is now on the wall.`, slug: res.data?.slug });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        setPicked(null);
+        setPhase({ step: "saved", message: "Changes saved.", slug: res.data?.slug });
+      }
     } catch (err) {
       if (uploaded.public.length || uploaded.originals.length) void discardUploads(uploaded);
       setPhase({ step: "error", message: err instanceof Error ? err.message : "Something went wrong while saving." });
@@ -215,7 +237,6 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
     const res = await deleteArtwork(artwork.id);
     if (!res.ok) return setPhase({ step: "error", message: res.error });
     router.push("/admin");
-    router.refresh();
   }
 
   const years = Array.from({ length: thisYear - 1949 }, (_, i) => thisYear - i);
@@ -225,6 +246,7 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
   return (
     <form onSubmit={save} className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)] lg:gap-16" noValidate>
       <div className="space-y-8">
+        {phase.step === "saved" && isNew ? <SavedNotice message={phase.message} slug={phase.slug} next /> : null}
         {/* Image */}
         <div>
           <p className="admin-label">Photograph of the painting</p>
@@ -359,6 +381,7 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
           </div>
         ) : null}
         {phase.step === "error" ? <Notice tone="error">{phase.message}</Notice> : null}
+        {phase.step === "saved" && !isNew ? <SavedNotice message={phase.message} slug={phase.slug} /> : null}
 
         <div className="flex flex-wrap items-center gap-4 border-t border-gold/25 pt-7">
           <Button type="submit" busy={busy}>
@@ -412,4 +435,26 @@ function Elapsed() {
     return () => window.clearInterval(t);
   }, []);
   return seconds >= 2 ? <span className="text-umber tabular-nums">({seconds}s)</span> : null;
+}
+
+/** Confirmation after saving, with the next steps one click away. */
+function SavedNotice({ message, slug, next }: { message: string; slug?: string; next?: boolean }) {
+  return (
+    <div className="admin-notice admin-notice-success flex flex-wrap items-center gap-x-5 gap-y-2" role="status">
+      <span>
+        {message}
+        {next ? " Drop in the next one below." : ""}
+      </span>
+      <span className="flex gap-4">
+        {slug ? (
+          <a href={`/works/${slug}`} target="_blank" rel="noreferrer" className="admin-link">
+            See it on the site
+          </a>
+        ) : null}
+        <Link href="/admin" className="admin-link">
+          Back to the collection
+        </Link>
+      </span>
+    </div>
+  );
 }
