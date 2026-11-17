@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import Image from "next/image";
 import { Colophon } from "@/components/site/Colophon";
 import { PreviewNote } from "@/components/site/PreviewNote";
@@ -19,6 +20,8 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
       </main>
       <Colophon />
       {!isSupabaseConfigured ? <PreviewNote /> : null}
+      {/* Visitor counts (Vercel Web Analytics): public pages only, so dashboard visits aren't counted */}
+      <Analytics />
     </>
   );
 }
