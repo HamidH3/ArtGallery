@@ -19,6 +19,8 @@ export interface Artwork {
   frame_style: FrameStyle;
   is_featured: boolean;
   is_published: boolean;
+  /** Can be bought as a print (see the Purchase page). Missing before the prints migration is run. */
+  print_available?: boolean;
   display_order: number;
   created_at: string;
   updated_at: string;

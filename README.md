@@ -146,3 +146,14 @@ Tested in development:
 - In headless Chrome: opening the viewing room, arrow keys, *Look closer*, Escape, the browser's Back button, scroll position and focus all return correctly. The upload form reads a dropped photograph, previews it in its frame, and makes the web copies.
 
 **Not yet tested against a live Supabase project**, because none was connected while building: real sign-in, the resumable upload to Supabase Storage, and saving through the Server Actions. After completing section 2, upload one painting end to end before sharing the site.
+
+## Selling prints
+
+The **Purchase** page sells prints of the paintings you mark *Sell prints* in the dashboard (each painting starts as not for sale). Sizes, prices, delivery and the delivery/returns text are all in `src/content/prints.ts`.
+
+Payments run through **Stripe Checkout**: when a visitor clicks *Buy this print*, the site asks Stripe for a secure payment page and sends them there. Card numbers and Apple Pay are handled entirely by Stripe and never reach this site. The price is decided on the server from `prints.ts`, so it can't be changed from a browser. Stripe collects the delivery address, emails the receipt, and lists every order (painting, size, address) in the Stripe Dashboard.
+
+Setup:
+1. Run `supabase/migrations/20261117000000_prints.sql` in the Supabase SQL Editor.
+2. Create a Stripe account, then add `STRIPE_SECRET_KEY` to Vercel (type **Secret**; never `NEXT_PUBLIC_`) and redeploy. Use a `sk_test_…` key to try it with Stripe's test cards, then switch to the `sk_live_…` key.
+3. In Stripe: turn on customer receipt emails and payment notifications, keep only Cards and Apple Pay switched on under Payment methods, and set your branding.

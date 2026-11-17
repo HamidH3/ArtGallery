@@ -28,6 +28,9 @@ export async function Colophon() {
           <Link href="/" className="link-quiet hover:text-wall-text">
             Gallery
           </Link>
+          <Link href="/purchase" className="link-quiet hover:text-wall-text">
+            Purchase
+          </Link>
           <Link href="/about" className="link-quiet hover:text-wall-text">
             About
           </Link>

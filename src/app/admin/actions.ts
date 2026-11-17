@@ -12,6 +12,26 @@ export type ActionResult<T = undefined> = { ok: true; data?: T } | { ok: false; 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const FRAMES: FrameStyle[] = ["auto", "gilt", "walnut", "paper", "none"];
 
+/** The prints column only exists once supabase/migrations/20261117000000_prints.sql has been run. */
+function explainDbError(message: string, prefix: string) {
+  if (message.includes("print_available")) {
+    return "Prints aren't set up in the database yet. In Supabase, open the SQL Editor and run supabase/migrations/20261117000000_prints.sql, then try again.";
+  }
+  return `${prefix}: ${message}`;
+}
+
+/**
+ * Before the prints migration is run, saving still works for paintings that aren't for sale:
+ * drop the missing column and let the caller retry.
+ */
+function withoutPrintColumn(message: string, row: Record<string, unknown>) {
+  if (message.includes("print_available") && !row.print_available) {
+    delete row.print_available;
+    return true;
+  }
+  return false;
+}
+
 function fail(error: unknown): { ok: false; error: string } {
   const message = error instanceof Error ? error.message : String(error);
   return { ok: false, error: message };
@@ -46,6 +66,7 @@ export interface ArtworkInput {
   frame_style: FrameStyle;
   is_featured: boolean;
   is_published: boolean;
+  print_available: boolean;
   /** Present only when a new image was uploaded. */
   image?: {
     image_path: string;
@@ -83,6 +104,7 @@ export async function saveArtwork(input: ArtworkInput): Promise<ActionResult<{ i
       frame_style: frame,
       is_featured: Boolean(input.is_featured),
       is_published: Boolean(input.is_published),
+      print_available: Boolean(input.print_available),
     };
 
     let previous: { image_path: string; thumbnail_path: string | null; original_path: string | null; slug: string } | null = null;
@@ -131,11 +153,13 @@ export async function saveArtwork(input: ArtworkInput): Promise<ActionResult<{ i
       // New works hang at the start of the walk; reorder them from the collection page.
       const { data: first } = await supabase.from("artworks").select("display_order").order("display_order").limit(1).maybeSingle();
       row.display_order = (first?.display_order ?? 1) - 1;
-      const { error } = await supabase.from("artworks").insert({ id: input.id, ...row });
-      if (error) throw new Error(`Could not save the painting: ${error.message}`);
+      let { error } = await supabase.from("artworks").insert({ id: input.id, ...row });
+      if (error && withoutPrintColumn(error.message, row)) ({ error } = await supabase.from("artworks").insert({ id: input.id, ...row }));
+      if (error) throw new Error(explainDbError(error.message, "Could not save the painting"));
     } else {
-      const { error } = await supabase.from("artworks").update(row).eq("id", input.id);
-      if (error) throw new Error(`Could not save the changes: ${error.message}`);
+      let { error } = await supabase.from("artworks").update(row).eq("id", input.id);
+      if (error && withoutPrintColumn(error.message, row)) ({ error } = await supabase.from("artworks").update(row).eq("id", input.id));
+      if (error) throw new Error(explainDbError(error.message, "Could not save the changes"));
       // Remove the files the new image replaced.
       if (input.image && previous) {
         await removeFiles(supabase, {
@@ -196,15 +220,19 @@ export async function reorderArtworks(ids: string[]): Promise<ActionResult> {
   }
 }
 
-export async function setArtworkFlags(id: string, flags: { is_published?: boolean; is_featured?: boolean }): Promise<ActionResult> {
+export async function setArtworkFlags(
+  id: string,
+  flags: { is_published?: boolean; is_featured?: boolean; print_available?: boolean },
+): Promise<ActionResult> {
   try {
     const supabase = await requireAdmin();
     if (!UUID.test(id)) throw new Error("That artwork reference isn't valid.");
     const patch: Record<string, boolean> = {};
     if (typeof flags.is_published === "boolean") patch.is_published = flags.is_published;
     if (typeof flags.is_featured === "boolean") patch.is_featured = flags.is_featured;
+    if (typeof flags.print_available === "boolean") patch.print_available = flags.print_available;
     const { error } = await supabase.from("artworks").update(patch).eq("id", id);
-    if (error) throw new Error(error.message);
+    if (error) throw new Error(explainDbError(error.message, "Could not save"));
     updateTag(GALLERY_TAG);
     return { ok: true };
   } catch (e) {

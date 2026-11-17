@@ -67,6 +67,7 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
   );
   const [featured, setFeatured] = useState(artwork?.is_featured ?? false);
   const [published, setPublished] = useState(artwork?.is_published ?? true);
+  const [forSale, setForSale] = useState(artwork?.print_available ?? false);
   const [picked, setPicked] = useState<Picked | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [titleError, setTitleError] = useState<string | null>(null);
@@ -201,6 +202,7 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
         frame_style: frame,
         is_featured: featured,
         is_published: published,
+        print_available: forSale,
         image,
       }), 60_000, "Saving the painting");
       if (!res.ok) throw new Error(res.error);
@@ -218,6 +220,7 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
         setAltText("");
         setFeatured(false);
         setPublished(true);
+        setForSale(false);
         idRef.current = null;
         setPhase({ step: "saved", message: `“${name}” is now on the wall.`, slug: res.data?.slug });
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -325,6 +328,12 @@ export function ArtworkEditor({ artwork, currentYear }: { artwork: Artwork | nul
         <div className="space-y-5 border-t border-gold/25 pt-7">
           <Toggle checked={featured} onChange={setFeatured} label="Hang it larger" description="Give this painting more wall space than the others." />
           <Toggle checked={published} onChange={setPublished} label="On view" description="Turn off to hide the painting from visitors without deleting it." />
+          <Toggle
+            checked={forSale}
+            onChange={setForSale}
+            label="Sell prints"
+            description="List it on the Purchase page in all three print sizes. Only for paintings whose design is your own."
+          />
         </div>
 
         <details className="admin-more">

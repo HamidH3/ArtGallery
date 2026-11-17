@@ -38,9 +38,14 @@ export function SiteNav({ name }: { name: string }) {
         Skip to content
       </a>
       <nav aria-label="Main" className="mx-auto grid h-[var(--nav-h)] max-w-[90rem] grid-cols-[1fr_auto_1fr] items-center px-5 sm:px-10 lg:px-16">
-        <Link href="/" className="nav-link justify-self-start" aria-current={galleryCurrent ? "page" : undefined}>
-          Gallery
-        </Link>
+        <div className="flex items-center gap-4 justify-self-start sm:gap-8">
+          <Link href="/" className="nav-link" aria-current={galleryCurrent ? "page" : undefined}>
+            Gallery
+          </Link>
+          <Link href="/purchase" className="nav-link" aria-current={pathname.startsWith("/purchase") ? "page" : undefined}>
+            Purchase
+          </Link>
+        </div>
         <Link
           href="/"
           className="wordmark px-3 font-display text-[1.28rem] font-medium tracking-[0.06em] whitespace-nowrap sm:text-[1.45rem]"

@@ -71,7 +71,7 @@ export function CollectionManager({ initial }: { initial: Artwork[] }) {
     );
   }
 
-  async function toggle(id: string, flag: "is_published" | "is_featured", value: boolean) {
+  async function toggle(id: string, flag: "is_published" | "is_featured" | "print_available", value: boolean) {
     setWorks((ws) => ws.map((w) => (w.id === id ? { ...w, [flag]: value } : w)));
     const res = await setArtworkFlags(id, { [flag]: value });
     if (!res.ok) {
@@ -145,7 +145,7 @@ function Row({
   index: number;
   count: number;
   onMove: (delta: number) => void;
-  onToggle: (flag: "is_published" | "is_featured", v: boolean) => void;
+  onToggle: (flag: "is_published" | "is_featured" | "print_available", v: boolean) => void;
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: art.id });
   const thumb = publicImageUrl(art.thumbnail_path || art.image_path);
@@ -193,6 +193,10 @@ function Row({
         <label className="admin-chip">
           <input type="checkbox" checked={art.is_published} onChange={(e) => onToggle("is_published", e.target.checked)} />
           On view
+        </label>
+        <label className="admin-chip">
+          <input type="checkbox" checked={Boolean(art.print_available)} onChange={(e) => onToggle("print_available", e.target.checked)} />
+          Prints
         </label>
       </div>
 
